@@ -6,6 +6,7 @@ import android.os.Bundle
 import com.kevinluo.autoglm.config.SystemPrompts
 import com.kevinluo.autoglm.settings.SettingsManager
 import com.kevinluo.autoglm.ui.FloatingWindowService
+import com.kevinluo.autoglm.util.LogFileManager
 import com.kevinluo.autoglm.util.Logger
 
 /**
@@ -31,6 +32,12 @@ class AutoGLMApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
+        // Initialize log file manager for file-based logging
+        LogFileManager.init(this)
+
+        // Import dev profiles if available (debug builds only)
+        importDevProfilesIfNeeded()
 
         // Load custom system prompts if set
         loadCustomSystemPrompts()
@@ -97,6 +104,34 @@ class AutoGLMApplication : Application() {
         settingsManager.getCustomSystemPrompt("en")?.let { prompt ->
             SystemPrompts.setCustomEnglishPrompt(prompt)
             Logger.d(TAG, "Loaded custom English system prompt")
+        }
+    }
+
+    /**
+     * Imports dev profiles from assets if available and not already imported.
+     *
+     * This is used for debug builds to pre-populate model profiles for testing.
+     * The dev_profiles.json file is only included in debug builds.
+     */
+    private fun importDevProfilesIfNeeded() {
+        val settingsManager = SettingsManager(this)
+        
+        // Skip if already imported
+        if (settingsManager.hasImportedDevProfiles()) {
+            return
+        }
+        
+        try {
+            val json = assets.open("dev_profiles.json").bufferedReader().readText()
+            val count = settingsManager.importDevProfiles(json)
+            if (count > 0) {
+                Logger.i(TAG, "Imported $count dev profiles from assets")
+            }
+        } catch (e: java.io.FileNotFoundException) {
+            // File not found - this is expected for release builds
+            Logger.d(TAG, "dev_profiles.json not found in assets (expected for release builds)")
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to import dev profiles", e)
         }
     }
 

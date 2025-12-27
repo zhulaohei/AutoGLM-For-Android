@@ -55,6 +55,11 @@ object Logger {
     var includeTimestamp: Boolean = false
     
     /**
+     * Whether to write logs to file in addition to Logcat.
+     */
+    var writeToFile: Boolean = true
+
+    /**
      * Logs a verbose message.
      *
      * @param tag Component tag identifying the source of the log message
@@ -65,6 +70,7 @@ object Logger {
     fun v(tag: String, message: String) {
         if (minLevel <= Level.VERBOSE) {
             Log.v(formatTag(tag), formatMessage(message))
+            writeToFileIfEnabled("VERBOSE", tag, message)
         }
     }
 
@@ -79,6 +85,7 @@ object Logger {
     fun d(tag: String, message: String) {
         if (minLevel <= Level.DEBUG) {
             Log.d(formatTag(tag), formatMessage(message))
+            writeToFileIfEnabled("DEBUG", tag, message)
         }
     }
 
@@ -93,6 +100,7 @@ object Logger {
     fun i(tag: String, message: String) {
         if (minLevel <= Level.INFO) {
             Log.i(formatTag(tag), formatMessage(message))
+            writeToFileIfEnabled("INFO", tag, message)
         }
     }
 
@@ -107,6 +115,7 @@ object Logger {
     fun w(tag: String, message: String) {
         if (minLevel <= Level.WARN) {
             Log.w(formatTag(tag), formatMessage(message))
+            writeToFileIfEnabled("WARN", tag, message)
         }
     }
 
@@ -122,6 +131,7 @@ object Logger {
     fun w(tag: String, message: String, throwable: Throwable) {
         if (minLevel <= Level.WARN) {
             Log.w(formatTag(tag), formatMessage(message), throwable)
+            writeToFileIfEnabled("WARN", tag, message, throwable)
         }
     }
 
@@ -136,6 +146,7 @@ object Logger {
     fun e(tag: String, message: String) {
         if (minLevel <= Level.ERROR) {
             Log.e(formatTag(tag), formatMessage(message))
+            writeToFileIfEnabled("ERROR", tag, message)
         }
     }
 
@@ -151,6 +162,16 @@ object Logger {
     fun e(tag: String, message: String, throwable: Throwable) {
         if (minLevel <= Level.ERROR) {
             Log.e(formatTag(tag), formatMessage(message), throwable)
+            writeToFileIfEnabled("ERROR", tag, message, throwable)
+        }
+    }
+
+    /**
+     * Writes log to file if file logging is enabled.
+     */
+    private fun writeToFileIfEnabled(level: String, tag: String, message: String, throwable: Throwable? = null) {
+        if (writeToFile) {
+            LogFileManager.writeLog(level, "$APP_TAG/$tag", message, throwable)
         }
     }
 

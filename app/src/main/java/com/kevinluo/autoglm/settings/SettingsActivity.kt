@@ -1,5 +1,6 @@
 package com.kevinluo.autoglm.settings
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -23,6 +24,7 @@ import com.kevinluo.autoglm.R
 import com.kevinluo.autoglm.agent.AgentConfig
 import com.kevinluo.autoglm.model.ModelClient
 import com.kevinluo.autoglm.model.ModelConfig
+import com.kevinluo.autoglm.util.LogFileManager
 import com.kevinluo.autoglm.util.Logger
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -81,6 +83,11 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var promptEnStatus: TextView
     private lateinit var btnEditPromptCn: Button
     private lateinit var btnEditPromptEn: Button
+    
+    // Debug logs views
+    private lateinit var logSizeText: TextView
+    private lateinit var btnExportLogs: Button
+    private lateinit var btnClearLogs: Button
     
     // Profile data
     private var savedProfiles: List<SavedModelProfile> = emptyList()
@@ -156,6 +163,11 @@ class SettingsActivity : AppCompatActivity() {
         promptEnStatus = findViewById(R.id.promptEnStatus)
         btnEditPromptCn = findViewById(R.id.btnEditPromptCn)
         btnEditPromptEn = findViewById(R.id.btnEditPromptEn)
+        
+        // Debug logs
+        logSizeText = findViewById(R.id.logSizeText)
+        btnExportLogs = findViewById(R.id.btnExportLogs)
+        btnClearLogs = findViewById(R.id.btnClearLogs)
     }
     
     /**
@@ -176,6 +188,9 @@ class SettingsActivity : AppCompatActivity() {
         
         // Update system prompt status
         updatePromptStatus()
+        
+        // Update log size display
+        updateLogSizeDisplay()
         
         // Populate model settings
         baseUrlInput.setText(modelConfig.baseUrl)
@@ -288,6 +303,14 @@ class SettingsActivity : AppCompatActivity() {
         }
         btnEditPromptEn.setOnClickListener {
             showEditPromptDialog("en")
+        }
+        
+        // Debug logs buttons
+        btnExportLogs.setOnClickListener {
+            exportDebugLogs()
+        }
+        btnClearLogs.setOnClickListener {
+            showClearLogsDialog()
         }
         
         // Clear errors on text change
@@ -910,5 +933,52 @@ class SettingsActivity : AppCompatActivity() {
     
     companion object {
         private const val TAG = "SettingsActivity"
+    }
+    
+    // ==================== Debug Logs ====================
+    
+    /**
+     * Updates the log size display text.
+     */
+    private fun updateLogSizeDisplay() {
+        val totalSize = LogFileManager.getTotalLogSize()
+        val formattedSize = LogFileManager.formatSize(totalSize)
+        logSizeText.text = getString(R.string.settings_debug_logs_size, formattedSize)
+    }
+    
+    /**
+     * Exports debug logs and opens share dialog.
+     */
+    private fun exportDebugLogs() {
+        Logger.i(TAG, "Exporting debug logs")
+        
+        val logFiles = LogFileManager.getLogFiles()
+        if (logFiles.isEmpty()) {
+            Toast.makeText(this, R.string.settings_logs_empty, Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        val shareIntent = LogFileManager.exportLogs(this)
+        if (shareIntent != null) {
+            startActivity(Intent.createChooser(shareIntent, getString(R.string.settings_export_logs)))
+        } else {
+            Toast.makeText(this, R.string.settings_logs_export_failed, Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    /**
+     * Shows confirmation dialog to clear all logs.
+     */
+    private fun showClearLogsDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.settings_clear_logs)
+            .setMessage(R.string.settings_clear_logs_confirm)
+            .setPositiveButton(R.string.dialog_confirm) { _, _ ->
+                LogFileManager.clearAllLogs()
+                updateLogSizeDisplay()
+                Toast.makeText(this, R.string.settings_logs_cleared, Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton(R.string.dialog_cancel, null)
+            .show()
     }
 }

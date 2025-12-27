@@ -3,4 +3,7 @@
     <cache-path
         name="share"
         path="share/" />
+    <cache-path
+        name="export"
+        path="export/" />
 </paths>

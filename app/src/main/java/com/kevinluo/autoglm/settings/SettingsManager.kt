@@ -96,6 +96,9 @@ class SettingsManager(private val context: Context) {
         private const val KEY_CUSTOM_SYSTEM_PROMPT_CN = "custom_system_prompt_cn"
         private const val KEY_CUSTOM_SYSTEM_PROMPT_EN = "custom_system_prompt_en"
         
+        // Dev profiles import key
+        private const val KEY_DEV_PROFILES_IMPORTED = "dev_profiles_imported"
+        
         // Default values
         private val DEFAULT_MODEL_CONFIG = ModelConfig()
         private val DEFAULT_AGENT_CONFIG = AgentConfig()
@@ -612,5 +615,86 @@ class SettingsManager(private val context: Context) {
      */
     fun hasCustomSystemPrompt(language: String): Boolean {
         return getCustomSystemPrompt(language) != null
+    }
+    
+    // ==================== Dev Profiles Import ====================
+    
+    /**
+     * Checks if dev profiles have already been imported.
+     *
+     * @return true if dev profiles have been imported, false otherwise
+     */
+    fun hasImportedDevProfiles(): Boolean {
+        return prefs.getBoolean(KEY_DEV_PROFILES_IMPORTED, false)
+    }
+    
+    /**
+     * Marks dev profiles as imported.
+     */
+    fun markDevProfilesImported() {
+        prefs.edit().putBoolean(KEY_DEV_PROFILES_IMPORTED, true).apply()
+    }
+    
+    /**
+     * Imports dev profiles from JSON string.
+     *
+     * @param json JSON string containing profiles configuration
+     * @return Number of profiles imported, or -1 if parsing failed
+     */
+    fun importDevProfiles(json: String): Int {
+        return try {
+            val root = JSONObject(json)
+            val profilesArray = root.getJSONArray("profiles")
+            val defaultProfileName = root.optString("defaultProfile", "")
+            
+            var importedCount = 0
+            var defaultProfileId: String? = null
+            
+            for (i in 0 until profilesArray.length()) {
+                val obj = profilesArray.getJSONObject(i)
+                val name = obj.getString("name")
+                val profileId = generateProfileId()
+                
+                val profile = SavedModelProfile(
+                    id = profileId,
+                    displayName = name,
+                    config = ModelConfig(
+                        baseUrl = obj.getString("baseUrl"),
+                        apiKey = obj.optString("apiKey", "EMPTY").ifEmpty { "EMPTY" },
+                        modelName = obj.getString("modelName")
+                    )
+                )
+                
+                saveProfile(profile)
+                importedCount++
+                
+                if (name == defaultProfileName) {
+                    defaultProfileId = profileId
+                }
+                
+                Logger.d(TAG, "Imported dev profile: $name")
+            }
+            
+            // Set default profile and apply its config
+            if (defaultProfileId != null) {
+                setCurrentProfileId(defaultProfileId)
+                getProfileById(defaultProfileId)?.let { profile ->
+                    saveModelConfig(profile.config)
+                }
+            } else if (importedCount > 0) {
+                // Use first profile as default
+                getSavedProfiles().firstOrNull()?.let { profile ->
+                    setCurrentProfileId(profile.id)
+                    saveModelConfig(profile.config)
+                }
+            }
+            
+            markDevProfilesImported()
+            Logger.i(TAG, "Imported $importedCount dev profiles")
+            importedCount
+        } catch (e: Exception) {
+            Logger.e(TAG, "Failed to import dev profiles", e)
+            -1
+        }
     }
 }

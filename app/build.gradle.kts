@@ -34,6 +34,7 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            resValue("string", "app_name", "AutoGLM Dev")
         }
         release {
             isMinifyEnabled = false
@@ -66,6 +67,31 @@ android {
             it.useJUnitPlatform()
         }
         unitTests.isReturnDefaultValues = true
+    }
+}
+
+// Copy dev_profiles.json to assets for debug builds
+android.applicationVariants.all {
+    val variant = this
+    if (variant.buildType.name == "debug") {
+        val copyDevProfiles = tasks.register("copyDevProfiles${variant.name.replaceFirstChar { it.uppercase() }}") {
+            val devProfilesFile = rootProject.file("dev_profiles.json")
+            val assetsDir = file("src/main/assets")
+            
+            doLast {
+                if (devProfilesFile.exists()) {
+                    assetsDir.mkdirs()
+                    devProfilesFile.copyTo(File(assetsDir, "dev_profiles.json"), overwrite = true)
+                    println("Copied dev_profiles.json to assets")
+                } else {
+                    println("dev_profiles.json not found, skipping")
+                }
+            }
+        }
+        
+        tasks.named("merge${variant.name.replaceFirstChar { it.uppercase() }}Assets") {
+            dependsOn(copyDevProfiles)
+        }
     }
 }
 

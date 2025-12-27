@@ -205,6 +205,17 @@
     <string name="history_load_more">加载更多</string>
     <string name="history_load_more_count">加载更多 (剩余 %d 步)</string>
     
+    <!-- Debug Logs -->
+    <string name="settings_debug_logs">调试日志</string>
+    <string name="settings_debug_logs_description">导出日志用于问题排查</string>
+    <string name="settings_debug_logs_size">日志大小: %s</string>
+    <string name="settings_export_logs">导出日志</string>
+    <string name="settings_clear_logs">清空</string>
+    <string name="settings_logs_cleared">日志已清空</string>
+    <string name="settings_logs_export_failed">导出失败</string>
+    <string name="settings_logs_empty">暂无日志</string>
+    <string name="settings_clear_logs_confirm">确定要清空所有日志吗？</string>
+    
     <!-- AutoGLM Keyboard -->
     <string name="keyboard_name">AutoGLM Keyboard</string>
     <string name="keyboard_status_ready">就绪</string>
